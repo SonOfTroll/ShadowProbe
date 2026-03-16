@@ -46,7 +46,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/youruser/ShadowProbe.git
+git clone https://github.com/SonOfTroll/ShadowProbe.git
 cd ShadowProbe
 
 # Install in development mode
