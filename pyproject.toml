@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shadowprobe"
+version = "1.0.0"
+description = "Advanced network reconnaissance and vulnerability scanning tool"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "ShadowProbe Team"},
+]
+keywords = ["network", "scanner", "reconnaissance", "security", "vulnerability"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Networking",
+]
+dependencies = [
+    "scapy>=2.5.0",
+    "python-nmap>=0.7.1",
+    "jinja2>=3.1.0",
+    "rich>=13.0.0",
+]
+
+[project.scripts]
+shadowprobe = "shadowprobe.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["shadowprobe*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

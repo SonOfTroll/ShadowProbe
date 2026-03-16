@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShadowProbe Scan Report</title>
+<style>
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: #1a2332;
+    --bg-card-hover: #1f2b3d;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #06b6d4;
+    --accent-purple: #8b5cf6;
+    --accent-blue: #3b82f6;
+    --border: #1e293b;
+    --critical: #ff1744;
+    --high: #ff5252;
+    --medium: #ffa726;
+    --low: #66bb6a;
+    --info: #42a5f5;
+    --gradient-1: linear-gradient(135deg, #06b6d4, #8b5cf6);
+    --gradient-2: linear-gradient(135deg, #3b82f6, #06b6d4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-size: 2.5rem;
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    letter-spacing: 2px;
+  }
+  .header .subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  .header .meta {
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(6, 182, 212, 0.1);
+  }
+  .stat-card .value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-card .label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.25rem;
+  }
+
+  /* Severity Badges */
+  .severity-bar {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+  .severity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .severity-badge.crit { color: var(--critical); border-color: var(--critical); background: rgba(255,23,68,0.1); }
+  .severity-badge.high { color: var(--high); border-color: var(--high); background: rgba(255,82,82,0.1); }
+  .severity-badge.med  { color: var(--medium); border-color: var(--medium); background: rgba(255,167,38,0.1); }
+  .severity-badge.low  { color: var(--low); border-color: var(--low); background: rgba(102,187,106,0.1); }
+  .severity-badge.inf  { color: var(--info); border-color: var(--info); background: rgba(66,165,245,0.1); }
+
+  /* Section */
+  .section {
+    margin-bottom: 2.5rem;
+  }
+  .section h2 {
+    font-size: 1.5rem;
+    color: var(--accent-cyan);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section h2::before {
+    content: '›';
+    color: var(--accent-purple);
+    font-size: 1.8rem;
+  }
+
+  /* Host Card */
+  .host-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .host-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .host-ip {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+  .host-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .host-meta span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+  }
+  .host-body { padding: 1.5rem; }
+
+  /* Port Table */
+  .port-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .port-table th {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  .port-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .port-table tr:hover td { background: var(--bg-card-hover); }
+  .port-num {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+  .state-open {
+    color: var(--low);
+    font-weight: 600;
+  }
+  .state-filtered {
+    color: var(--medium);
+  }
+  .state-closed {
+    color: var(--text-muted);
+  }
+
+  /* Vuln Card */
+  .vuln-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
+    border-left: 4px solid;
+  }
+  .vuln-card.vuln-critical { border-color: var(--critical); }
+  .vuln-card.vuln-high { border-color: var(--high); }
+  .vuln-card.vuln-medium { border-color: var(--medium); }
+  .vuln-card.vuln-low { border-color: var(--low); }
+  .vuln-card.vuln-info { border-color: var(--info); }
+  .vuln-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  .vuln-cve {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--accent-cyan);
+  }
+  .vuln-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  .vuln-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+
+  /* No results */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 1rem; }
+    .header h1 { font-size: 1.8rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ SHADOWPROBE</h1>
+  <p class="subtitle">Network Reconnaissance &amp; Vulnerability Report</p>
+  <p class="meta">
+    Generated: {{ generated_at }} &nbsp;|&nbsp;
+    Scan Duration: {{ summary.duration }}s &nbsp;|&nbsp;
+    Command: <code>{{ report.command | e }}</code>
+  </p>
+</div>
+
+<div class="container">
+
+  <!-- Executive Summary -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value">{{ summary.total_hosts }}</div>
+      <div class="label">Hosts Scanned</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">{{ summary.hosts_up }}</div>
+      <div class="label">Hosts Up</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">{{ summary.open_ports }}</div>
+      <div class="label">Open Ports</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">{{ summary.total_vulns }}</div>
+      <div class="label">Vulnerabilities</div>
+    </div>
+  </div>
+
+  {% if summary.total_vulns > 0 %}
+  <div class="severity-bar">
+    <span class="severity-badge crit">🔴 Critical: {{ summary.severity_counts.critical }}</span>
+    <span class="severity-badge high">🟠 High: {{ summary.severity_counts.high }}</span>
+    <span class="severity-badge med">🟡 Medium: {{ summary.severity_counts.medium }}</span>
+    <span class="severity-badge low">🟢 Low: {{ summary.severity_counts.low }}</span>
+    <span class="severity-badge inf">🔵 Info: {{ summary.severity_counts.info }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Host Details -->
+  <div class="section">
+    <h2>Host Details</h2>
+
+    {% if report.hosts_up %}
+    {% for host in report.hosts_up %}
+    <div class="host-card">
+      <div class="host-header">
+        <span class="host-ip">{{ host.ip }}</span>
+        <div class="host-meta">
+          {% if host.hostname %}<span>🏷 {{ host.hostname }}</span>{% endif %}
+          {% if host.os_guess %}<span>💻 {{ host.os_guess }} ({{ host.os_confidence }}%)</span>{% endif %}
+          {% if host.mac_address %}<span>📡 {{ host.mac_address }}{% if host.vendor %} ({{ host.vendor }}){% endif %}</span>{% endif %}
+          {% if host.ttl %}<span>⏱ TTL: {{ host.ttl }}</span>{% endif %}
+          <span>🔍 {{ host.discovery_method }}</span>
+        </div>
+      </div>
+      <div class="host-body">
+        {% if host.open_ports %}
+        <table class="port-table">
+          <thead>
+            <tr>
+              <th>Port</th>
+              <th>State</th>
+              <th>Protocol</th>
+              <th>Service</th>
+              <th>Product</th>
+              <th>Version</th>
+              <th>Banner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in host.open_ports %}
+            <tr>
+              <td class="port-num">{{ p.port }}</td>
+              <td class="state-{{ p.state.value }}">{{ p.state.value }}</td>
+              <td>{{ p.protocol }}</td>
+              <td>{{ p.service.name }}</td>
+              <td>{{ p.service.product or '—' }}</td>
+              <td>{{ p.service.version or '—' }}</td>
+              <td>{{ p.service.banner[:80] if p.service.banner else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No open ports discovered</p>
+        {% endif %}
+
+        {% if host.all_vulns %}
+        <h3 style="color: var(--accent-purple); margin-top: 1.5rem; margin-bottom: 0.75rem;">
+          🛡 Vulnerabilities ({{ host.all_vulns | length }})
+        </h3>
+        {% for vuln in host.all_vulns %}
+        <div class="vuln-card vuln-{{ vuln.severity.value }}">
+          <div class="vuln-title">{{ vuln.title }}</div>
+          <div class="vuln-cve">{{ vuln.cve_id }}</div>
+          <div class="vuln-desc">{{ vuln.description }}</div>
+          <div class="vuln-meta">
+            <span>CVSS: {{ vuln.cvss }}</span>
+            <span>Severity: {{ vuln.severity.value | upper }}</span>
+            <span>Affected: {{ vuln.affected_versions }}</span>
+            {% if vuln.reference %}<span><a href="{{ vuln.reference }}" target="_blank" style="color: var(--accent-cyan);">Reference ↗</a></span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <p>No live hosts discovered during this scan.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if report.errors %}
+  <div class="section">
+    <h2>⚠ Errors</h2>
+    {% for err in report.errors %}
+    <div class="vuln-card vuln-medium">
+      <div class="vuln-desc">{{ err }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<div class="footer">
+  <p>Generated by <strong>ShadowProbe</strong> v1.0.0 — Advanced Network Reconnaissance &amp; Vulnerability Scanner</p>
+  <p>⚠ For authorized security testing only. Unauthorized network scanning is illegal.</p>
+</div>
+
+</body>
+</html>
