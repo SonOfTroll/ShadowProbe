@@ -185,27 +185,49 @@ class ScanOrchestrator:
         console.print("[cyan]🔌 Running port scan...[/cyan]")
         all_results: Dict[str, List[PortResult]] = {}
 
-        for scan_type in self.config.scan_types:
-            if self._interrupted:
-                break
+        total_ports = len(self.config.ports) * len(targets)
 
-            scanner: Optional[object] = None
-            if scan_type == ScanType.CONNECT:
-                scanner = TcpConnectScanner(self.config, logger=self.log)
-            elif scan_type == ScanType.SYN:
-                scanner = SynScanner(self.config, logger=self.log)
-                if not scanner.validate():
-                    console.print("[yellow]  ⚠ SYN scan unavailable, falling back to connect[/yellow]")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("{task.completed}/{task.total}"),
+            TimeElapsedColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Port scan", total=total_ports)
+
+            def _advance(n: int = 1) -> None:
+                progress.advance(task, n)
+
+            for scan_type in self.config.scan_types:
+                if self._interrupted:
+                    break
+
+                scanner: Optional[object] = None
+                if scan_type == ScanType.CONNECT:
                     scanner = TcpConnectScanner(self.config, logger=self.log)
-            elif scan_type == ScanType.UDP:
-                scanner = UdpScanner(self.config, logger=self.log)
+                elif scan_type == ScanType.SYN:
+                    scanner = SynScanner(self.config, logger=self.log)
+                    if not scanner.validate():
+                        console.print("[yellow]  ⚠ SYN scan unavailable, falling back to connect[/yellow]")
+                        scanner = TcpConnectScanner(self.config, logger=self.log)
+                elif scan_type == ScanType.UDP:
+                    scanner = UdpScanner(self.config, logger=self.log)
 
-            if scanner:
-                results = scanner.scan(targets, ports=self.config.ports)
-                for ip, ports in results.items():
-                    existing = all_results.get(ip, [])
-                    existing.extend(ports)
-                    all_results[ip] = existing
+                if scanner:
+                    results = scanner.scan(
+                        targets,
+                        ports=self.config.ports,
+                        progress_callback=_advance,
+                    )
+                    for ip, ports in results.items():
+                        existing = all_results.get(ip, [])
+                        existing.extend(ports)
+                        all_results[ip] = existing
+
+            # Ensure progress completes even if callbacks didn't cover everything
+            progress.update(task, completed=total_ports)
 
         # Deduplicate and count
         total_open = sum(
