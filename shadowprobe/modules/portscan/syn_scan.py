@@ -51,6 +51,7 @@ class SynScanner(BaseScanner):
         scapy_conf.verb = 0
 
         ports = kwargs.get("ports", self.config.ports)
+        progress_callback = kwargs.get("progress_callback")
         if self.config.randomize_ports:
             ports = randomize_list(ports)
 
@@ -59,12 +60,12 @@ class SynScanner(BaseScanner):
 
         for ip in targets:
             self.log.info("SYN scan: %s (%d ports)", ip, len(ports))
-            results_map[ip] = self._scan_host(ip, ports)
+            results_map[ip] = self._scan_host(ip, ports, progress_callback)
 
         self._stop_timer()
         return results_map
 
-    def _scan_host(self, ip: str, ports: List[int]) -> List[PortResult]:
+    def _scan_host(self, ip: str, ports: List[int], progress_callback=None) -> List[PortResult]:
         """SYN-scan all ports on one host sequentially (raw sockets are
         not thread-safe in scapy)."""
         results: List[PortResult] = []
@@ -75,6 +76,8 @@ class SynScanner(BaseScanner):
             if pr:
                 results.append(pr)
             self._delay()
+            if progress_callback:
+                progress_callback(1)
 
         results.sort(key=lambda r: r.port)
         return results

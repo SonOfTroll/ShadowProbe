@@ -29,6 +29,7 @@ class TcpConnectScanner(BaseScanner):
             Mapping of IP → list of PortResult.
         """
         ports = kwargs.get("ports", self.config.ports)
+        progress_callback = kwargs.get("progress_callback")
         if self.config.randomize_ports:
             ports = randomize_list(ports)
 
@@ -38,13 +39,13 @@ class TcpConnectScanner(BaseScanner):
 
         for ip in targets:
             self.log.info("TCP connect scan: %s (%d ports)", ip, len(ports))
-            port_results = self._scan_host(ip, ports)
+            port_results = self._scan_host(ip, ports, progress_callback)
             results_map[ip] = port_results
 
         self._stop_timer()
         return results_map
 
-    def _scan_host(self, ip: str, ports: List[int]) -> List[PortResult]:
+    def _scan_host(self, ip: str, ports: List[int], progress_callback=None) -> List[PortResult]:
         """Scan all ports on a single host concurrently."""
         results: List[PortResult] = []
         max_workers = self.config.effective_threads()
@@ -61,6 +62,8 @@ class TcpConnectScanner(BaseScanner):
                         results.append(pr)
                 except Exception as exc:
                     self.log.debug("Error scanning %s:%d — %s", ip, port, exc)
+                if progress_callback:
+                    progress_callback(1)
 
         results.sort(key=lambda r: r.port)
         return results
